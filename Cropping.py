@@ -93,7 +93,6 @@ class ImageLoader(tk.Tk):
 
         self.Back = ttk.Button(self.frame2, text='Back')
 
-
 #-----------------------------functions-----------------------------------------
     def open_image(self):
 
