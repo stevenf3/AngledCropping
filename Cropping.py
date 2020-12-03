@@ -91,6 +91,8 @@ class ImageLoader(tk.Tk):
         self.HelpText = ttk.Label(self.frame2, text='Load an image to begin.', justify='center')
         self.HelpText.grid(row=0, columnspan=2)
 
+        self.Back = ttk.Button(self.frame2, text='Back')
+
 
 #-----------------------------functions-----------------------------------------
     def open_image(self):
