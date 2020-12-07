@@ -88,6 +88,10 @@ class ImageLoader(tk.Tk):
         self.SaveImage.grid()
         self.SaveImage.grid_forget()
 
+        self.BetterPreciseCrop = ttk.Button(self.frame2, text='Better Precise Crop', command=self.better_precise_crop, state=tk.ACTIVE)
+        self.grid()
+        self.grid_forget()
+
         self.HelpText = ttk.Label(self.frame2, text='Load an image to begin.', justify='center')
         self.HelpText.grid(row=0, columnspan=2)
 
