@@ -58,7 +58,7 @@ class ImageLoader(tk.Tk):
         self.OpenImage.grid(row=1, columnspan=2, sticky='ew')
 
         self.CloseButton = ttk.Button(self.frame2, text='Close', command=self.onclose)
-        self.CloseButton.grid(row=9, columnspan=2)
+        self.CloseButton.grid(row=10, columnspan=2)
 
         self.PickPoints = ttk.Button(self.frame2, text='Select Baseline', command=self.pickpoints, state=tk.ACTIVE)
         self.PickPoints.grid()
@@ -91,7 +91,10 @@ class ImageLoader(tk.Tk):
         self.HelpText = ttk.Label(self.frame2, text='Load an image to begin.', justify='center')
         self.HelpText.grid(row=0, columnspan=2)
 
-        self.Back = ttk.Button(self.frame2, text='Back')
+        self.UndoButton = ttk.Button(self.frame2, text='Undo', command=self.undo_precise_crop, state=tk.ACTIVE)
+        self.UndoButton.grid()
+        self.UndoButton.grid_forget()
+
 
 #-----------------------------functions-----------------------------------------
     def open_image(self):
@@ -103,7 +106,7 @@ class ImageLoader(tk.Tk):
                    ('jpeg images', '.jpg')]
             )
 
-
+        self.step = 1
         try:
             self.image_path = os.path.dirname(self.f)
 
@@ -133,7 +136,6 @@ class ImageLoader(tk.Tk):
             except AttributeError as e:
                 pass
             self.loaded_image = self.ax.imshow(self.img_arr)
-
             self.PickPoints.grid(row=3, columnspan=2)
             self.HelpText.config(text='Select a Baseline \nthat follows the angle of\nthe bottom of the desired region\n\nRight click to place points,\nmiddle click to end.')
             self.canvas.draw()
@@ -143,7 +145,7 @@ class ImageLoader(tk.Tk):
     def pickpoints(self):
         if self.PickPoints['text'] == 'Select Baseline':
             self.pointpick = PointPicker(self, 2)
-
+            self.step = 2
             self.after(100, self.drawline)
 
             self.PickPoints['text'] = 'Done'
@@ -177,15 +179,16 @@ class ImageLoader(tk.Tk):
             self.theta = np.arctan(yspan/xspan)
             self.alpha = self.theta * 180/(np.pi)
 
-            self.img_arr = ndimage.rotate(self.img_arr, self.alpha, reshape=True)
+            self.rot_img_arr = ndimage.rotate(self.img_arr, self.alpha, reshape=True)
             self.loaded_image.remove()
-            self.loaded_image = self.ax.imshow(self.img_arr)
+            self.rotated_image = self.ax.imshow(self.rot_img_arr)
             self.baseline = self.ax.plot(self.xs, self.ys, '-o', color='green')[0]
 
             self.canvas.draw()
 
-            self.PreciseCrop.grid(row=4,columnspan=2)
-            self.InteractiveRectangle.grid(row=3,columnspan=2)
+            self.PreciseCrop.grid(row=3,columnspan=2)
+            self.InteractiveRectangle.grid(row=4,columnspan=2)
+            self.UndoButton.grid(row=9, columnspan=2)
             self.PickPoints.state([tk.ACTIVE])
             self.PickPoints.grid_forget()
 
@@ -200,8 +203,10 @@ class ImageLoader(tk.Tk):
         self.PreciseCrop.grid_forget()
         self.BufferEntry.grid_forget()
         self.BufferLabel.grid_forget()
-        #self.InteractiveRectangle.state([tk.DISABLED])
+        self.InteractiveRectangle.state([tk.DISABLED])
         self.canvas.draw()
+
+        self.step = 3.1
         def line_select_callback(eclick, erelease):
             'eclick and erelease are the press and release events'
             self.x1, self.y1 = eclick.xdata, eclick.ydata
@@ -221,10 +226,15 @@ class ImageLoader(tk.Tk):
                                                interactive=True)
         plt.connect('key_press_event', toggle_selector)
 
-        self.Crop.grid(row=5, columnspan=2)
+        self.Crop.grid(row=6, columnspan=2)
         self.canvas.draw()
 
     def cropper(self):
+        if self.step == 3.2:
+            self.step = 4.2
+
+        else:
+            self.step = 4.1
         self.Crop.grid_forget()
         LeftxBound = floor(self.x1)
         RightxBound = floor(self.x2)
@@ -240,23 +250,24 @@ class ImageLoader(tk.Tk):
 
         if LeftxBound < RightxBound:
             if TopyBound < BotyBound:
-                self.img_cropped = self.img_arr[TopyBound-self.buffer:BotyBound+self.buffer,LeftxBound-self.buffer:RightxBound+self.buffer]
+                self.img_cropped = self.rot_img_arr[TopyBound-self.buffer:BotyBound+self.buffer,LeftxBound-self.buffer:RightxBound+self.buffer]
             if TopyBound > BotyBound:
-                self.img_cropped = self.img_arr[BotyBound-self.buffer:TopyBound+self.buffer,LeftxBound-self.buffer:RightxBound+self.buffer]
+                self.img_cropped = self.rot_img_arr[BotyBound-self.buffer:TopyBound+self.buffer,LeftxBound-self.buffer:RightxBound+self.buffer]
         else:
             if TopyBound < BotyBound:
-                self.img_cropped = self.img_arr[TopyBound-self.buffer:BotyBound+self.buffer,RightxBound-self.buffer:LeftxBound+self.buffer]
+                self.img_cropped = self.rot_img_arr[TopyBound-self.buffer:BotyBound+self.buffer,RightxBound-self.buffer:LeftxBound+self.buffer]
             if TopyBound > BotyBound:
-                self.img_cropped = self.img_arr[BotyBound-self.buffer:TopyBound+self.buffer,RightxBound-self.buffer:LeftxBound+self.buffer]
-
+                self.img_cropped = self.rot_img_arr[BotyBound-self.buffer:TopyBound+self.buffer,RightxBound-self.buffer:LeftxBound+self.buffer]
 
         self.cropped_image = self.ax.imshow(self.img_cropped)
 
         self.canvas.draw()
 
-        self.SaveImage.grid(row=6, columnspan=2)
-        self.Crop.state([tk.DISABLED])
+        self.SaveImage.grid(row=7, columnspan=2)
         self.HelpText.config(text='Save the image, select\nselect a directory to save the image')
+        self.UndoButton.grid(row=9, columnspan=3)
+        self.InteractiveRectangle.state([tk.ACTIVE])
+        self.InteractiveRectangle.grid_forget()
         self.canvas.draw()
 
         self.rectline1.remove()
@@ -266,11 +277,14 @@ class ImageLoader(tk.Tk):
         self.canvas.draw()
 
     def precise_crop(self):
-        self.BufferLabel.grid(row=6, columnspan=2)
-        self.BufferEntry.grid(row=7, columnspan=2)
+        self.BufferLabel.grid(row=4, columnspan=2)
+        self.BufferEntry.grid(row=5, columnspan=2)
         self.HelpText.config(text='Click two opposite corners\nto define the desired rectangle.\n\nRight click to place points,\nmiddle click to end.\n\nChoose desired offset for the cropped image.')
         self.InteractiveRectangle.grid_forget()
+        self.PreciseCrop['state'] = 'disabled'
         self.canvas.draw()
+
+        self.step = 3.2
         #pick exact corners you want to crop, add in specified buffer
         self.pick_corners = PointPicker(self,2)
         self.after(100, self.draw_rect)
@@ -332,6 +346,66 @@ class ImageLoader(tk.Tk):
             self.HelpText.config(text='Image Successfully Saved.')
         except ValueError as e:
             tk.messagebox.showerror(title='Saving Error', message='No location selected.\nPlease select a location to save the image.')
+
+    def undo_precise_crop(self):
+
+        if self.step == 2:
+            self.rotated_image.remove()
+            del self.rotated_image
+            self.loaded_image = self.ax.imshow(self.img_arr)
+            self.canvas.draw()
+
+            self.PickPoints['text'] = 'Select Baseline'
+            self.PickPoints.grid(row=4, columnspan=2)
+
+            self.InteractiveRectangle.grid_forget()
+            self.PreciseCrop.grid_forget()
+
+        elif self.step == 3.2:
+            self.rectline1.remove()
+            self.rectline2.remove()
+            self.rectline3.remove()
+            self.rectline4.remove()
+            self.canvas.draw()
+
+            self.step = 2
+
+            self.PreciseCrop.grid(row=3, columnspan=2)
+            self.PreciseCrop['state'] = 'normal'
+            self.BufferLabel.grid(row=4, columnspan=2)
+            self.BufferEntry.grid(row=5, columnspan=2)
+            self.Crop.grid_forget()
+
+
+        elif self.step == 4.1:
+            self.cropped_image.remove()
+            self.rotated_image = self.ax.imshow(self.rot_img_arr)
+            self.canvas.draw()
+
+            self.InteractiveRectangle.grid(row=3, columnspan=2)
+            self.InteractiveRectangle['state'] = 'normal'
+            self.SaveImage.grid_forget()
+            self.Crop.grid(row=8, columnspan=2)
+            self.step = 3.1
+
+        elif self.step == 4.2:
+            self.BufferLabel.grid(row=5, columnspan=2)
+            self.BufferEntry.grid(row=6, columnspan=2)
+            self.rectline1 = self.ax.plot([self.TopLeftX, self.BottomRightX],[self.TopLeftY,self.TopLeftY],'-o',color='deeppink')[0]
+            self.rectline2 = self.ax.plot([self.TopLeftX, self.BottomRightX],[self.BottomRightY,self.BottomRightY],'-o',color='deeppink')[0]
+            self.rectline3 = self.ax.plot([self.TopLeftX, self.TopLeftX],[self.TopLeftY,self.BottomRightY],'-o',color='deeppink')[0]
+            self.rectline4 = self.ax.plot([self.BottomRightX, self.BottomRightX],[self.TopLeftY,self.BottomRightY],'-o',color='deeppink')[0]
+
+            self.cropped_image.remove()
+            self.rotated_image = self.ax.imshow(self.rot_img_arr)
+
+            self.canvas.draw()
+
+            self.SaveImage.grid_forget()
+            self.Crop.grid(row=8, columnspan=2)
+
+            self.step = 3.2
+
 
 
     def onclose(self):
