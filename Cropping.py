@@ -133,14 +133,10 @@ class ImageLoader(tk.Tk):
                         self.rectline3.remove()
                         self.rectline4.remove()
                     except ValueError:
-                        print('error check good:', e)
-                        print('instance 1')
                         pass
                 except AttributeError:
-                    print('instance 2')
                     pass
             except AttributeError or ValueError:
-                print('instance 3')
                 try:
                     self.loaded_image.remove()
                     self.InteractiveRectangle.grid_forget()
@@ -162,15 +158,12 @@ class ImageLoader(tk.Tk):
                         print('rotated removed')
                     except:
                         print('Nothing to delete, this is the first loaded image. If this isnt, unknown error')
-            print('testing')
             self.loaded_image = self.ax.imshow(self.img_arr)
-            print('loaded_image worked')
             self.PickPoints.grid(row=2, columnspan=2)
             self.HelpText.config(text='Select a Baseline \nthat follows the angle of\nthe bottom of the desired region\n\nRight click to place points,\nmiddle click to end.')
             self.canvas.draw()
         except Exception as e:
             if e == ValueError:
-                print('this is the error')
                 pass
             elif e == AttributeError:
                 tk.messagebox.showerror(title='Loading Error', message='No image selected, please select an image')
