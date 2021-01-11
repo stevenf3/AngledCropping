@@ -89,13 +89,13 @@ class ImageLoader(tk.Tk):
         self.SaveImage.grid_forget()
 
         self.BetterPreciseCrop = ttk.Button(self.frame2, text='Better Precise Crop', command=self.better_precise_crop, state=tk.ACTIVE)
-        self.grid()
-        self.grid_forget()
+        self.BetterPreciseCrop.grid()
+        self.BetterPreciseCrop.grid_forget()
 
         self.HelpText = ttk.Label(self.frame2, text='Load an image to begin.', justify='center')
         self.HelpText.grid(row=0, columnspan=2)
 
-        self.UndoButton = ttk.Button(self.frame2, text='Undo', command=self.undo_precise_crop, state=tk.ACTIVE)
+        self.UndoButton = ttk.Button(self.frame2, text='Undo', command=self.undo, state=tk.ACTIVE)
         self.UndoButton.grid()
         self.UndoButton.grid_forget()
 
@@ -109,42 +109,75 @@ class ImageLoader(tk.Tk):
             filetypes=[
                    ('jpeg images', '.jpg')]
             )
-
         self.step = 1
+
         try:
             self.image_path = os.path.dirname(self.f)
-
-
             self.img_arr = plt.imread(self.f)
             self.img_arr = np.array(self.img_arr)
             try:
-                self.loaded_image.remove()
+                print('running 0')
+                self.cropped_image.remove()
+                print('running 1')
+                self.SaveImage.grid_forget()
+                self.UndoButton.grid_forget()
+                self.PickPoints['text'] = 'Select Baseline'
+                self.PickPoints.grid(row=3, columnspan=2)
+                self.dummy.remove() #fake variable to force error
                 try:
-                    self.InteractiveRectangle.grid_forget()
-                    self.PreciseCrop.grid_forget()
-                    self.PickPoints.grid(row=3)
+                    self.BufferLabel.grid_forget()
+                    self.BufferEntry.grid_forget()
+                    self.Crop.grid_forget()
+                    self.SaveImage.grid_forget()
                     try:
-                        self.BufferLabel.grid_forget()
-                        self.BufferEntry.grid_forget()
-                        self.Crop.grid_forget()
                         self.rectline1.remove()
                         self.rectline2.remove()
                         self.rectline3.remove()
                         self.rectline4.remove()
-                        self.PickPoints.grid(row=3)
-                        toggle_selector.RS.setactive(false)
-                    except AttributeError as e:
+                    except ValueError:
+                        print('error check good:', e)
+                        print('instance 1')
                         pass
-                except AttributeError as e:
+                except AttributeError:
+                    print('instance 2')
                     pass
-            except AttributeError as e:
-                pass
+            except AttributeError or ValueError:
+                print('instance 3')
+                try:
+                    self.loaded_image.remove()
+                    self.InteractiveRectangle.grid_forget()
+                    self.PreciseCrop.grid_forget()
+                    self.BetterPreciseCrop.grid_forget()
+                    self.UndoButton.grid_forget()
+                    self.PickPoints['text'] = 'Select Baseline'
+                    self.PickPoints.grid(row=2, columnspan=2)
+                    print('original removed')
+                except Exception:
+                    try:
+                        self.rotated_image.remove()
+                        self.InteractiveRectangle.grid_forget()
+                        self.PreciseCrop.grid_forget()
+                        self.BetterPreciseCrop.grid_forget()
+                        self.UndoButton.grid_forget()
+                        self.PickPoints['text'] = 'Select Baseline'
+                        self.PickPoints.grid(row=2, columnspan=2)
+                        print('rotated removed')
+                    except:
+                        print('Nothing to delete, this is the first loaded image. If this isnt, unknown error')
+            print('testing')
             self.loaded_image = self.ax.imshow(self.img_arr)
-            self.PickPoints.grid(row=3, columnspan=2)
+            print('loaded_image worked')
+            self.PickPoints.grid(row=2, columnspan=2)
             self.HelpText.config(text='Select a Baseline \nthat follows the angle of\nthe bottom of the desired region\n\nRight click to place points,\nmiddle click to end.')
             self.canvas.draw()
-        except AttributeError as e:
-            tk.messagebox.showerror(title='Loading Error', message='No image selected, please select an image')
+        except Exception as e:
+            if e == ValueError:
+                print('this is the error')
+                pass
+            elif e == AttributeError:
+                tk.messagebox.showerror(title='Loading Error', message='No image selected, please select an image')
+
+
 
     def pickpoints(self):
         if self.PickPoints['text'] == 'Select Baseline':
@@ -183,20 +216,22 @@ class ImageLoader(tk.Tk):
             self.theta = np.arctan(yspan/xspan)
             self.alpha = self.theta * 180/(np.pi)
 
-            self.rot_img_arr = ndimage.rotate(self.img_arr, self.alpha, reshape=True)
+            self.rot_img_arr = ndimage.rotate(self.img_arr, self.alpha, reshape=False)
             self.loaded_image.remove()
             self.rotated_image = self.ax.imshow(self.rot_img_arr)
             self.baseline = self.ax.plot(self.xs, self.ys, '-o', color='green')[0]
 
             self.canvas.draw()
 
-            self.PreciseCrop.grid(row=3,columnspan=2)
-            self.InteractiveRectangle.grid(row=4,columnspan=2)
-            self.UndoButton.grid(row=9, columnspan=2)
-            self.PickPoints.state([tk.ACTIVE])
+            self.PreciseCrop.grid(row=3, columnspan=2)
+            self.InteractiveRectangle.grid(row=5, columnspan=2)
+            self.BetterPreciseCrop['state'] = 'normal'
+            self.BetterPreciseCrop['text'] = 'Better Precise Crop'
+            self.BetterPreciseCrop.grid(row=4, columnspan=2)
+            self.UndoButton.grid(row=11, columnspan=2)
             self.PickPoints.grid_forget()
 
-            self.HelpText.config(text='Choose your cropping method:\n\nInteractive Rectangle:\nA draggable rectangle for less\nprecise cropping.\n\nPrecise Cropping:\nClick two points to define\ntwo corners of a rectangle')
+            self.HelpText.config(text='Choose your cropping method:\n\nInteractive Rectangle:\nA draggable rectangle for less\nprecise cropping.\n\nPrecise Cropping:\nClick two points to define\ntwo corners of a rectangle\n\nBetter Precise Cropping: \nInput as many points\nas you want to generate\na smart cropping region')
 
 
             self.baseline.remove()
@@ -207,6 +242,7 @@ class ImageLoader(tk.Tk):
         self.PreciseCrop.grid_forget()
         self.BufferEntry.grid_forget()
         self.BufferLabel.grid_forget()
+        self.BetterPreciseCrop.grid_forget()
         self.InteractiveRectangle.state([tk.DISABLED])
         self.canvas.draw()
 
@@ -230,14 +266,19 @@ class ImageLoader(tk.Tk):
                                                interactive=True)
         plt.connect('key_press_event', toggle_selector)
 
-        self.Crop.grid(row=6, columnspan=2)
+        self.Crop.grid(row=9, columnspan=2)
         self.canvas.draw()
 
     def cropper(self):
+
+        self.BufferLabel.grid_forget()
+        self.BufferEntry.grid_forget()
+
         if self.step == 3.2:
             self.step = 4.2
-
-        else:
+        elif self.step == 3.3:
+            self.step=4.3
+        elif self.step == 3.1:
             self.step = 4.1
         self.Crop.grid_forget()
         LeftxBound = floor(self.x1)
@@ -267,31 +308,43 @@ class ImageLoader(tk.Tk):
 
         self.canvas.draw()
 
-        self.SaveImage.grid(row=7, columnspan=2)
+        try:
+            self.rectline1.remove()
+            self.rectline2.remove()
+            self.rectline3.remove()
+            self.rectline4.remove()
+        except AttributeError:
+            pass
+
+        self.SaveImage.grid(row=10, columnspan=2)
         self.HelpText.config(text='Save the image, select\nselect a directory to save the image')
-        self.UndoButton.grid(row=9, columnspan=3)
+        self.UndoButton.grid(row=11, columnspan=3)
         self.InteractiveRectangle.state([tk.ACTIVE])
         self.InteractiveRectangle.grid_forget()
+        self.BetterPreciseCrop.grid_forget()
         self.canvas.draw()
 
-        self.rectline1.remove()
-        self.rectline2.remove()
-        self.rectline3.remove()
-        self.rectline4.remove()
-        self.canvas.draw()
+
 
     def precise_crop(self):
-        self.BufferLabel.grid(row=4, columnspan=2)
-        self.BufferEntry.grid(row=5, columnspan=2)
-        self.HelpText.config(text='Click two opposite corners\nto define the desired rectangle.\n\nRight click to place points,\nmiddle click to end.\n\nChoose desired offset for the cropped image.')
-        self.InteractiveRectangle.grid_forget()
-        self.PreciseCrop['state'] = 'disabled'
-        self.canvas.draw()
+        if self.PreciseCrop['text'] == 'Precise Cropping':
+            self.BufferLabel.grid(row=7, columnspan=2)
+            self.BufferEntry.grid(row=8, columnspan=2)
+            self.HelpText.config(text='Click two opposite corners\nto define the desired rectangle.\n\nRight click to place points,\nmiddle click to end.\n\nChoose desired offset for the cropped image.')
+            self.InteractiveRectangle.grid_forget()
+            self.BetterPreciseCrop.grid_forget()
+            self.canvas.draw()
 
-        self.step = 3.2
-        #pick exact corners you want to crop, add in specified buffer
-        self.pick_corners = PointPicker(self,2)
-        self.after(100, self.draw_rect)
+            self.step = 3.2
+            #pick exact corners you want to crop, add in specified buffer
+            self.pick_corners = PointPicker(self, 2)
+            self.after(100, self.draw_rect)
+
+            self.PreciseCrop['text'] = 'Done'
+
+        elif self.PreciseCrop['text'] == 'Done':
+            self.PreciseCrop['text'] = 'Precise Cropping'
+            self.pick_corners.end()
 
     def draw_rect(self):
         try:
@@ -332,26 +385,28 @@ class ImageLoader(tk.Tk):
             self.y1 = CornerYList[np.argmin(CornerYList)]
             self.y2 = CornerYList[np.argmax(CornerYList)]
 
-            self.Crop.grid(row=8, columnspan=2)
+            self.Crop.grid(row=9, columnspan=2)
             #self.PreciseCrop.state([tk.DISABLED])
             self.canvas.draw()
 
     def save_image(self):
-        #plt.savefig('cropped_image.jpg', bbox_inches='tight', transparent=True, pad_inches=0)
         self.g = tkfd.asksaveasfilename(
             parent=self, initialdir=self.image_path,
             title='Choose file',
             filetypes=[
                    ('jpeg images', '.jpg')]
             )
-
+        print(os.path.basename(self.g))
         try:
             plt.imsave(self.g, self.img_cropped)
             self.HelpText.config(text='Image Successfully Saved.')
         except ValueError as e:
-            tk.messagebox.showerror(title='Saving Error', message='No location selected.\nPlease select a location to save the image.')
+            if '.' in os.path.basename(self.g):
+                tk.messagebox.showerror(title='Saving Error', message='No location selected.\nPlease select a location to save the image.')
+            else:
+                tk.messagebox.showerror(title='Saving Error', message='Missing File Extension.\nPlease add an extension (i.e. .jpg) at the end of the desired file name.')
 
-    def undo_precise_crop(self):
+    def undo(self):
 
         if self.step == 2:
             self.rotated_image.remove()
@@ -360,7 +415,7 @@ class ImageLoader(tk.Tk):
             self.canvas.draw()
 
             self.PickPoints['text'] = 'Select Baseline'
-            self.PickPoints.grid(row=4, columnspan=2)
+            self.PickPoints.grid(row=2, columnspan=2)
 
             self.InteractiveRectangle.grid_forget()
             self.PreciseCrop.grid_forget()
@@ -376,8 +431,8 @@ class ImageLoader(tk.Tk):
 
             self.PreciseCrop.grid(row=3, columnspan=2)
             self.PreciseCrop['state'] = 'normal'
-            self.BufferLabel.grid(row=4, columnspan=2)
-            self.BufferEntry.grid(row=5, columnspan=2)
+            self.BufferLabel.grid(row=7, columnspan=2)
+            self.BufferEntry.grid(row=8, columnspan=2)
             self.Crop.grid_forget()
 
 
@@ -386,15 +441,15 @@ class ImageLoader(tk.Tk):
             self.rotated_image = self.ax.imshow(self.rot_img_arr)
             self.canvas.draw()
 
-            self.InteractiveRectangle.grid(row=3, columnspan=2)
+            self.InteractiveRectangle.grid(row=5, columnspan=2)
             self.InteractiveRectangle['state'] = 'normal'
             self.SaveImage.grid_forget()
-            self.Crop.grid(row=8, columnspan=2)
+            self.Crop.grid(row=9, columnspan=2)
             self.step = 3.1
 
         elif self.step == 4.2:
-            self.BufferLabel.grid(row=5, columnspan=2)
-            self.BufferEntry.grid(row=6, columnspan=2)
+            self.BufferLabel.grid(row=7, columnspan=2)
+            self.BufferEntry.grid(row=8, columnspan=2)
             self.rectline1 = self.ax.plot([self.TopLeftX, self.BottomRightX],[self.TopLeftY,self.TopLeftY],'-o',color='deeppink')[0]
             self.rectline2 = self.ax.plot([self.TopLeftX, self.BottomRightX],[self.BottomRightY,self.BottomRightY],'-o',color='deeppink')[0]
             self.rectline3 = self.ax.plot([self.TopLeftX, self.TopLeftX],[self.TopLeftY,self.BottomRightY],'-o',color='deeppink')[0]
@@ -406,10 +461,75 @@ class ImageLoader(tk.Tk):
             self.canvas.draw()
 
             self.SaveImage.grid_forget()
-            self.Crop.grid(row=8, columnspan=2)
+            self.Crop.grid(row=9, columnspan=2)
 
             self.step = 3.2
 
+        elif self.step == 4.3:
+            self.BufferLabel.grid(row=7, columnspan=2)
+            self.BufferEntry.grid(row=8, columnspan=2)
+
+            self.cropped_image.remove()
+            self.rotated_image = self.ax.imshow(self.rot_img_arr)
+
+            self.rectline1 = self.ax.plot([self.x1, self.x2],[self.y1,self.y1],'-o',color='deeppink')[0]
+            self.rectline2 = self.ax.plot([self.x1, self.x2],[self.y2,self.y2],'-o',color='deeppink')[0]
+            self.rectline3 = self.ax.plot([self.x1, self.x1],[self.y1,self.y2],'-o',color='orange')[0]
+            self.rectline4 = self.ax.plot([self.x2, self.x2],[self.y1,self.y2],'-o',color='chartreuse')[0]
+
+            self.canvas.draw()
+
+            self.SaveImage.grid_forget()
+            self.Crop.grid(row=9, columnspan=2)
+
+            self.step = 3.3
+
+    def better_precise_crop(self):
+        if self.BetterPreciseCrop['text'] == 'Better Precise Crop':
+            self.PreciseCrop.grid_forget()
+            self.InteractiveRectangle.grid_forget()
+            self.BufferLabel.grid(row=7, columnspan=2)
+            self.BufferEntry.grid(row=8, columnspan=2)
+
+            self.HelpText.config(text='Select all edges of the region you want to crop.\nInput as many points as needed,\n a cropping region will automatically\nbe created to fit the points.\n\nRight click to place,\nmiddle click to end.')
+
+            self.step = 3.3
+            self.pick_all_corners = PointPickerNoCap(self)
+            self.after(100, self.better_rect)
+
+            self.BetterPreciseCrop['text'] = 'Done'
+
+        elif self.BetterPreciseCrop['text'] == 'Done':
+            self.BetterPreciseCrop['text'] = 'Better Precise Crop'
+            self.pick_all_corners.end()
+
+    def better_rect(self):
+        try:
+            self.better_rect_point = np.array(self.pick_all_corners.points)
+            if self.pick_all_corners.ended:
+                del self.pick_all_corners
+            self.after(100, self.better_rect)
+
+        except AttributeError as e:
+            self.BetterCornerX = [floor(i.get_xdata()[0]) for i in self.better_rect_point]
+            self.BetterCornerY = [floor(i.get_ydata()[0]) for i in self.better_rect_point]
+
+            self.x1 = self.BetterCornerX[np.argmin(self.BetterCornerX)]
+            self.x2 = self.BetterCornerX[np.argmax(self.BetterCornerX)]
+
+            self.y1 = self.BetterCornerY[np.argmin(self.BetterCornerY)]
+            self.y2 = self.BetterCornerY[np.argmax(self.BetterCornerY)]
+
+            self.rectline1 = self.ax.plot([self.x1, self.x2],[self.y1,self.y1],'-o',color='deeppink')[0]
+            self.rectline2 = self.ax.plot([self.x1, self.x2],[self.y2,self.y2],'-o',color='deeppink')[0]
+            self.rectline3 = self.ax.plot([self.x1, self.x1],[self.y1,self.y2],'-o',color='orange')[0]
+            self.rectline4 = self.ax.plot([self.x2, self.x2],[self.y1,self.y2],'-o',color='chartreuse')[0]
+            self.canvas.draw()
+
+            for line in self.better_rect_point:
+                line.remove()
+
+            self.Crop.grid(row=9, columnspan=2)
 
 
     def onclose(self):
@@ -451,6 +571,34 @@ class PointPicker:
         self.master.fig.canvas.mpl_disconnect(self.cid1)
         self.ended = True
 
+
+class PointPickerNoCap:
+
+    def __init__(self, master):
+        #self.ax = ax
+        self.master = master
+        #self.fig = fig
+
+        self.cid1 = self.master.fig.canvas.mpl_connect('button_press_event', self)
+        self.points = []
+        self.ended = False
+
+
+    def __call__(self, event):
+        if event.button == 3:
+            self.pt, = self.master.ax.plot(event.xdata, event.ydata, 'o')
+            self.master.fig.canvas.draw()
+            self.points.append(self.pt,)
+
+
+        if event.button == 2:
+
+            self.master.fig.canvas.mpl_disconnect(self.cid1)
+            self.ended = True
+
+    def end(self):
+        self.master.fig.canvas.mpl_disconnect(self.cid1)
+        self.ended = True
 
 
 
