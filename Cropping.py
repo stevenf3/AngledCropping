@@ -116,9 +116,7 @@ class ImageLoader(tk.Tk):
             self.img_arr = plt.imread(self.f)
             self.img_arr = np.array(self.img_arr)
             try:
-                print('running 0')
                 self.cropped_image.remove()
-                print('running 1')
                 self.SaveImage.grid_forget()
                 self.UndoButton.grid_forget()
                 self.PickPoints['text'] = 'Select Baseline'
