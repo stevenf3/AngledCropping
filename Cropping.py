@@ -103,8 +103,14 @@ class ImageLoader(tk.Tk):
 #-----------------------------functions-----------------------------------------
     def open_image(self):
 
+        # self.f = tkfd.askopenfilename(
+        #     parent=self, initialdir='.',
+        #     title='Choose file',
+        #     filetypes=[
+        #            ('jpeg images', '.jpg')]
+        #     )
         self.f = tkfd.askopenfilename(
-            parent=self, initialdir='.',
+            parent=self,
             title='Choose file',
             filetypes=[
                    ('jpeg images', '.jpg')]
