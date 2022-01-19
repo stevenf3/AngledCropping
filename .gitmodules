@@ -1,0 +1,3 @@
+[submodule "GUIBaseClasses"]
+	path = GUIBaseClasses
+	url = https://github.com/cmoynihan/GUIBaseClasses.git
